@@ -1,131 +1,101 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
+import {useEffect, useState} from 'react';
 import React from 'react';
-import type {PropsWithChildren} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {
-  ScrollView,
+  AppState,
+  AppStateStatus,
+  LogBox,
+  Platform,
   StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
 } from 'react-native';
+import {Clock, History} from 'lucide-react-native';
+import {TimerProvider} from './src/context/TimerContext';
+import {ThemeProvider} from './src/context/ThemeContext';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {AnalyticsProvider} from './src/context/AnalyticsContext';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import HomeScreen from './src/screens/HomeScreen/HomeScreen';
+import SplashScreen from './src/screens/SplashScreen/SplashScreen';
+import HistoryScreen from './src/screens/HistoryScreen/HistoryScreen';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const Tab = createBottomTabNavigator();
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextAppState: AppStateStatus) => {
+        console.log('App state changed to', nextAppState);
+      },
+    );
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the reccomendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <SplashScreen />;
+  }
 
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
+    <GestureHandlerRootView style={{flex: 1}}>
+      <SafeAreaProvider>
+        <StatusBar barStyle="dark-content" />
+        <AnalyticsProvider>
+          <ThemeProvider>
+            <TimerProvider>
+              <NavigationContainer>
+                <Tab.Navigator
+                  screenOptions={({route}) => ({
+                    tabBarIcon: ({color, size}) => {
+                      if (route.name === 'Timers') {
+                        return <Clock size={size} color={color} />;
+                      } else if (route.name === 'History') {
+                        return <History size={size} color={color} />;
+                      }
+                      return null;
+                    },
+                    tabBarActiveTintColor: '#6366f1',
+                    tabBarInactiveTintColor: 'gray',
+                    headerShown: false,
+                    tabBarStyle: {
+                      elevation: 2,
+                      height: 60,
+                      paddingBottom: 8,
+                      paddingTop: 8,
+                      borderRadius: 100,
+                      borderTopWidth: 0,
+                      backgroundColor: 'white',
+                      marginBottom: 10,
+                      marginHorizontal: 30,
+                    },
+
+                    tabBarLabelStyle: {
+                      fontSize: 10,
+                      fontWeight: '500',
+                    },
+                  })}>
+                  <Tab.Screen name="Timers" component={HomeScreen} />
+                  <Tab.Screen name="History" component={HistoryScreen} />
+                </Tab.Navigator>
+              </NavigationContainer>
+            </TimerProvider>
+          </ThemeProvider>
+        </AnalyticsProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
-
-export default App;
